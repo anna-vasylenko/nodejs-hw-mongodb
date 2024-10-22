@@ -12,7 +12,7 @@ export const contactAddSchema = Joi.object({
       }),
       phoneNumber: Joi.string().pattern(phoneNumberRegExp).required().messages({'string.pattern.base': 'Phone number must be in the format: +380XXXXXXXXX, without spaces'}),
       email: Joi.string().email(),
-      isFavorite: Joi.boolean(),
+      isFavourite: Joi.boolean(),
       contactType: Joi.string().valid(...contactTypeList),
 
 });
@@ -26,7 +26,7 @@ export const contactUpdateSchema = Joi.object({
       }),
       phoneNumber: Joi.string().pattern(phoneNumberRegExp).messages({'string.pattern.base': 'Phone number must be in the format: +380XXXXXXXXX, without spaces'}),
       email: Joi.string().email(),
-      isFavorite: Joi.boolean(),
+      isFavourite: Joi.boolean(),
       contactType: Joi.string().valid(...contactTypeList),
 
 });
