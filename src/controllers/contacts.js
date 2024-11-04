@@ -4,6 +4,9 @@ import * as contactsServices from '../services/contacts.js';
 import { parsePaginationParams } from '../utils/parsePaginationParams.js';
 import { parseSortParams } from '../utils/parseSortParams.js';
 import { parseFilterParams } from '../utils/parseFilterParams.js';
+import { saveFileToUploadsDir } from '../utils/saveFileToUploadDir.js';
+import { env } from '../utils/env.js';
+import { saveFileToCloudinary } from '../utils/saveFileToCloudinary.js';
 
 export const getContactsController = async (req, res) => {
   const { _id: userId } = req.user;
@@ -29,25 +32,42 @@ export const getContactsController = async (req, res) => {
 };
 
 export const getContactByIdController = async (req, res, next) => {
-  const { contactId } = req.params;
+  const { contactId: _id } = req.params;
   const { _id: userId } = req.user;
-  const data = await contactsServices.getContact({ contactId, userId });
+
+  const data = await contactsServices.getContact({ _id, userId });
 
   if (!data) {
-    next(createHttpError(404, 'Contact not found'));
+    next(createHttpError(404, `Contact not found contact with id ${_id}!`));
     return;
   }
 
   res.json({
     status: 200,
-    message: `Successfully found contact with id ${contactId}!`,
+    message: `Successfully found contact with id ${_id}!`,
     data,
   });
 };
 
 export const addContactController = async (req, res) => {
   const { _id: userId } = req.user;
-  const data = await contactsServices.addContact({ ...req.body, userId });
+  const photo = req.file;
+
+  let photoUrl;
+
+  if (photo) {
+    if (env('ENABLE_CLOUDINARY') === 'true') {
+      photoUrl = await saveFileToCloudinary(photo);
+    } else {
+      photoUrl = await saveFileToUploadsDir(photo);
+    }
+  }
+
+  const data = await contactsServices.addContact({
+    ...req.body,
+    photo: photoUrl,
+    userId,
+  });
 
   res.status(201).json({
     status: 201,
@@ -72,9 +92,24 @@ export const deleteContactController = async (req, res, next) => {
 export const updateContactController = async (req, res, next) => {
   const { contactId } = req.params;
   const { _id: userId } = req.user;
+  const photo = req.file;
+
+  let photoUrl;
+
+  if (photo) {
+    if (env('ENABLE_CLOUDINARY') === 'true') {
+      photoUrl = await saveFileToCloudinary(photo);
+    } else {
+      photoUrl = await saveFileToUploadsDir(photo);
+    }
+  }
+
   const result = await contactsServices.updateContact(
     { _id: contactId, userId },
-    req.body,
+    {
+      ...req.body,
+      photo: photoUrl,
+    },
   );
 
   if (!result) {
